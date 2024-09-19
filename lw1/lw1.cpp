@@ -1,8 +1,41 @@
+// Условие:
+// Вступительные испытания в некоторый вуз состоят из  трех 
+// экзаменов:  математика  (максимальный  балл  – 9),  информатика 
+// (максимальный балл – 9), литература  (максимальный балл – 5). В
+// текстовом вход имеются  сведения  о  сдаче  абитуриентами  этих
+// экзаменов. Строки файла имеют следующий формат:
+// <Фамилия> <оценка1> <оценка2> <оценка3>, где <Фамилия> –строка,
+// состоящая не более, чем из 20 символов, оценки – числа от 0  до
+// максимальной оценки по предмету соответственно. Ноль ставится в
+// случае, если экзамен не сдавался, например, после полученной на
+// предыдущем экзамене двойки. Все  баллы,  большие  2,  считаются 
+// удовлетворительными). Пример входных строк:
+// Иванов 8 9 3
+// Петров 2 0 0
+// Задается количество мест K,  на которые претендуют абитуриенты.
+// Требуется определить список абитуриентов с полупроходным баллом
+// или  сообщить,  что  такой   балл   отсутствует.  Полупроходным 
+// считается такой балл, что лишь  часть  абитуриентов,  набравших 
+// этот балл и не получивших ни одной неудовлетворительной оценки,
+// попадает в K лучших, которые должны быть зачислены
+
+// Автор: Кугелев Михаил
+
+// Среда выполнения:
+// g++ (Ubuntu 12.3.0-1ubuntu1~23.04) 12.3.0
+// Copyright (C) 2022 Free Software Foundation, Inc.
+// This is free software; see the source for copying conditions.  There is NO
+// warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <string>
 #include <vector>
+
+#define minGrade 2
+#define maxGradeFirst 9
+#define maxGradeSecond 5
 
 struct PassedApplicant 
 {
@@ -16,20 +49,10 @@ struct SemiPassingApplicant
     int grade;  
 };
 
-void writeDescription()
-{
-    std::cout << "Условие: Определить список абитуриентов с полупроходным баллом\nили  сообщить,  что  такой   балл   отсутствует.  Полупроходным\nсчитается такой балл, что лишь  часть  абитуриентов,  набравших\nэтот балл и не получивших ни одной неудовлетворительной оценки,\nпопадает в K лучших, которые должны быть зачислены\n";
-    std::cout << "Автор: Михаил Кугелев\n";
-    std::cout << "Среда выполнения: Visual Studio Code\n\n";
-}
-
 std::string readGrades(std::ifstream &inputFile, std::vector<PassedApplicant> &passedApplicants)
 {
-    std::string surname;
-    int minGrade = 2; 
+    std::string surname; 
     int grade;
-    int gradeSum;
-    int countGrade;
     std::string line;
 
     while (std::getline(inputFile, line)) 
@@ -37,19 +60,19 @@ std::string readGrades(std::ifstream &inputFile, std::vector<PassedApplicant> &p
         std::istringstream stream(line);
         stream >> surname;
 
-        gradeSum = 0;    
-        countGrade = 0;
+        int gradeSum = 0;
+        int countGrade = 0;
         std::string state = "passable";
 
         while (stream >> grade)
         {
             countGrade++;
             
-            if (countGrade < 3 && grade > 9) 
+            if (countGrade < 3 && grade > maxGradeFirst)
             {
                 state = "incorrect-values";
-            } 
-            else if (countGrade == 3 && grade > 5) 
+            }
+            else if (countGrade == 3 && grade > maxGradeSecond) 
             {
                 state = "incorrect-values";
             } 
@@ -88,7 +111,7 @@ std::string readGrades(std::ifstream &inputFile, std::vector<PassedApplicant> &p
 
 void sortStudents(std::vector<PassedApplicant> &passedApplicants) 
 {
-    int n = passedApplicants.size();
+    const size_t n = passedApplicants.size();
     for (int i = 0; i < n - 1; i++) 
     {
         for (int j = 0; j < n - 1 - i; j++) 
@@ -103,12 +126,12 @@ void sortStudents(std::vector<PassedApplicant> &passedApplicants)
     }
 }
 
-void findSemiPassingApplicants(std::vector<PassedApplicant> &passedApplicants, std::vector<SemiPassingApplicant> &semiPassingApplicants, int currentStudentIndex)
+void findSemiPassingApplicants(const std::vector<PassedApplicant> &passedApplicants, std::vector<SemiPassingApplicant> &semiPassingApplicants, int currentStudentIndex)
 {
-    if (passedApplicants.size() > 0) 
+    if (!passedApplicants.empty())
     {
-        int semiPassingGrade = passedApplicants[currentStudentIndex].grade;
-        int numberOfStudents = passedApplicants.size();
+        const int semiPassingGrade = passedApplicants[currentStudentIndex].grade;
+        const size_t numberOfStudents = passedApplicants.size();
 
         if (passedApplicants[currentStudentIndex + 1].grade == semiPassingGrade) 
         {
@@ -132,6 +155,7 @@ void showListOfSemiPassing(std::vector<SemiPassingApplicant> &semiPassingApplica
         {
             std::cout << " " << semiPassingApplicant.surname << " " << semiPassingApplicant.grade << std::endl;
         }  
+        std::cout << std::endl;
     }    
     else
     {
@@ -141,34 +165,37 @@ void showListOfSemiPassing(std::vector<SemiPassingApplicant> &semiPassingApplica
 
 void showListOfApplicants(std::vector<PassedApplicant> &passedApplicants)
 {
-    if (passedApplicants.size() > 0)
-    std::cout << "Список абитуриентов, прошедших вступительные экзамены: " << std::endl;
-    for (const auto &passedApplicant : passedApplicants) 
+    if (!passedApplicants.empty())
     {
-        std::cout << " " << passedApplicant.surname << " " << passedApplicant.grade << std::endl;
+        std::cout << "Список абитуриентов, прошедших вступительные экзамены: " << std::endl;
+        for (const auto &passedApplicant : passedApplicants) 
+        {
+            std::cout << " " << passedApplicant.surname << " " << passedApplicant.grade << std::endl;
+        }
+        std::cout << std::endl;
     }
+    else
+    {
+        std::cout << "Нет студентов прошедших вступительные экзамены!\n" << std::endl;      
+    }    
 }
 
 int main() 
 {
-    writeDescription();
-
     while (true)
     {
-        std::vector<PassedApplicant> passedApplicants;
-        std::vector<SemiPassingApplicant> semiPassingApplicants;
         std::string fileName;
-        std::string readState;
         int places;
 
         std::cout << "Введите имя файла (exit, чтобы выйти): ";
         std::cin >> fileName;   
-        std::ifstream inputFile(fileName);
         
         if (fileName == "exit") 
         {
             break;
         }
+
+        std::ifstream inputFile("../" + fileName);
 
         std::cout << "Введите количество мест: ";
         std::cin >> places;  
@@ -176,6 +203,9 @@ int main()
 
         if (inputFile.is_open()) 
         {
+            std::vector<PassedApplicant> passedApplicants;
+            std::vector<SemiPassingApplicant> semiPassingApplicants;
+            std::string readState;
             readState = readGrades(inputFile, passedApplicants);
             if (readState == "incorrect-values")
             {
