@@ -1,0 +1,6 @@
+program Test2;
+var
+  b: integer;
+begin
+  b := 20; { comment not closed { nested comment }
+end.
