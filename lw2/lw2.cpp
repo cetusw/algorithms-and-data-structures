@@ -20,17 +20,15 @@
 
 int position = 0;
 int line = 1;
-int lastPosition = 0;
-int lastLine = 1;
 bool error = false;
 
 struct Stack
 {
-    char key{};
+    std::string key{};
     Stack *next{};
 };
 
-void push(Stack *&p, const char &element)
+void push(Stack *&p, const std::string &element)
 {
     const auto top = new Stack;
     top->key = element;
@@ -45,20 +43,43 @@ void pop(Stack *&p)
     delete top;
 }
 
-char top(Stack *&p)
+std::string top(Stack *&p)
 {
     const Stack *top = p;
     if (p == nullptr)
     {
-        return '\0';
+        return "nullptr";
     }
     return top->key;
 }
 
-void writeLastPosition()
+void clearOutput()
 {
-    lastPosition = position;
-    lastLine = line;
+    std::ofstream bufFile("../buf.txt", std::ofstream::trunc);
+
+    if (!bufFile.is_open()) {
+        std::cerr << "Ошибка открытия буфера!" << std::endl;
+    }
+
+    bufFile.close();
+}
+
+void writeFromOutput()
+{
+    std::ifstream outputFile("../output.txt");
+    if (!outputFile.is_open())
+    {
+        std::cerr << "Ошибка открытия буфера!" << std::endl;
+        return;
+    }
+
+    char ch;
+    while (outputFile.get(ch))
+    {
+        std::cout << ch;
+    }
+
+    outputFile.close();
 }
 
 void checkEndOfLine(const char ch)
@@ -70,79 +91,123 @@ void checkEndOfLine(const char ch)
     }
 }
 
-void writeOpenBrace(Stack *&p, const char ch1)
+void writeOpenBrace(Stack *&p, Stack *&pos, std::ofstream& bufFile)
 {
-    if (top(p) == '{' || top(p) == '(')
+    if (top(p) == "\'")
     {
-        push(p, '{');
+        bufFile << '{';
+        return;
+    }
+    if (top(p) == "{" || top(p) == "(")
+    {
+        push(p, std::to_string(position));
+        push(p, std::to_string(line));
+        push(p, "{");
+
     }
     else
     {
-        std::cout << ch1 << std::flush;
-        push(p, '{');
+        bufFile << '{';
+        push(p, std::to_string(position));
+        push(p, std::to_string(line));
+        push(p, "{");
     }
 }
 
-void writeCloseBrace(Stack *&p, const char ch1)
+void writeCloseBrace(Stack *&p, Stack *&pos, std::ofstream& bufFile)
 {
-    if (top(p) == '{')
+    if (top(p) == "\'")
+    {
+        bufFile << "}";
+        return;
+    }
+    if (top(p) == "{")
     {
         pop(p);
-        if (top(p) != '{')
+        pop(p);
+        pop(p);
+        if (top(p) != "{" && top(p) != "(")
         {
-            std::cout << ch1 << std::flush;
+            bufFile << '}';
         }
     }
-    else if (top(p) != '(')
+    else if (top(p) != "(")
     {
-        std::cout << ch1 << std::flush;
+        bufFile << '}';
         std::cout << "\nОшибка на " << line << ":" << position << " : нет соответствующей открывающей скобки для '}'" << std::endl;
         error = true;
     }
 }
 
-void writeOpenBracket(Stack *&p, const char ch1)
+void writeOpenBracket(Stack *&p, Stack *&pos, std::ofstream& bufFile)
 {
-    if (top(p) == '(' || top(p) == '{')
+    if (top(p) == "\'")
     {
-        push(p, '(');
+        bufFile << "(*";
+        return;
+    }
+    if (top(p) == "(" || top(p) == "{")
+    {
+        push(p, std::to_string(position));
+        push(p, std::to_string(line));
+        push(p, "(");
     }
     else
     {
-        std::cout << '{' << std::flush;
-        push(p, '(');
+        bufFile << '{';
+        push(p, std::to_string(position));
+        push(p, std::to_string(line));
+        push(p, "(");
     }
 }
 
-void writeCloseBracket(Stack *&p, const char ch1)
+void writeCloseBracket(Stack *&p, Stack *&pos, std::ofstream& bufFile)
 {
-    if (top(p) == '(')
+    if (top(p) == "\'")
+    {
+        bufFile << "*)";
+        return;
+    }
+    if (top(p) == "(")
     {
         pop(p);
-        if (top(p) != '(')
+        pop(p);
+        pop(p);
+        if (top(p) != "(" && top(p) != "{")
         {
-            std::cout << '}' << std::flush;
+            bufFile << '}';
         }
     }
-    else if (top(p) != '{')
+    else if (top(p) != "{")
     {
-        std::cout << "*)" << std::flush;
+        bufFile << "*)";
         std::cout << "\nОшибка на " << line << ":" << position << " : нет соответствующей открывающей скобки для '*)'" << std::endl;
         error = true;
     }
 }
 
-bool checkBracesAndBrackets(Stack *&p, std::ifstream& inputFile, const char ch1)
+void writeSingleQuote(Stack *&p, std::ofstream& bufFile)
+{
+    if (top(p) == "\'")
+    {
+        pop(p);
+    }
+    else
+    {
+        push(p, "\'");
+    }
+}
+
+bool checkBracesAndBrackets(Stack *&p, Stack *&pos, std::ifstream& inputFile, std::ofstream& bufFile, const char ch1)
 {
     if (ch1 == '{')
     {
-        writeLastPosition();
-        writeOpenBrace(p, ch1);
+        writeOpenBrace(p, pos, bufFile);
         return true;
     }
     if (ch1 == '}')
     {
-        writeCloseBrace(p, ch1);
+        writeCloseBrace(p, pos, bufFile);
         return true;
     }
     if (ch1 == '(')
@@ -153,8 +218,7 @@ bool checkBracesAndBrackets(Stack *&p, std::ifstream& inputFile, const char ch1)
         checkEndOfLine(ch2);
         if (ch2 == '*')
         {
-            writeLastPosition();
-            writeOpenBracket(p, ch1);
+            writeOpenBracket(p, pos, bufFile);
         }
         return true;
     }
@@ -166,35 +230,57 @@ bool checkBracesAndBrackets(Stack *&p, std::ifstream& inputFile, const char ch1)
         checkEndOfLine(ch2);
         if (ch2 == ')')
         {
-            writeCloseBracket(p, ch1);
+            writeCloseBracket(p, pos, bufFile);
             return true;
         }
         return false;
     }
+    if (ch1 == '\'')
+    {
+        writeSingleQuote(p, bufFile);
+    }
     checkEndOfLine(ch1);
-    std::cout << ch1 << std::flush;
+    bufFile << ch1;
     return false;
 }
 
-void formatFile(Stack *&p, std::ifstream& inputFile)
+void formatFile(Stack *&p, Stack *&pos, std::ifstream& inputFile)
 {
     char ch1;
     position = 0;
     line = 1;
+    std::ofstream outputFile("../output.txt");
+    if (!outputFile.is_open())
+    {
+        std::cerr << "Ошибка при открытии файла!" << std::endl;
+    }
+
     while (inputFile.get(ch1))
     {
         position++;
-        checkBracesAndBrackets(p, inputFile, ch1);
+        checkBracesAndBrackets(p, pos, inputFile, outputFile, ch1);
         if (error)
         {
+            clearOutput();
             break;
         }
     }
 
     if (p != nullptr)
     {
-        std::cout << "\nОшибка на " << lastLine << ":" << lastPosition << " : не все '{' были закрыты" << std::endl;
+        pop(p);
+        std::cout << "\nОшибка на " << top(p) << ":";
+        pop(p);
+        std::cout << top(p) << " : не все скобки были закрыты" << std::endl;
+        clearOutput();
         error = true;
+    }
+
+    outputFile.close();
+    if (!error)
+    {
+        writeFromOutput();
+        std::cout << "\n\nОшибок нет, все вложенные скобки были удалены!" << std::endl;
     }
 }
 
@@ -217,7 +303,8 @@ int main()
         if (inputFile.is_open())
         {
             Stack *top = nullptr;
-            formatFile(top, inputFile);
+            Stack *pos = nullptr;
+            formatFile(top, pos, inputFile);
         }
         else
         {

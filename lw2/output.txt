@@ -1,0 +1,6 @@
+program Test5;
+var
+  e: integer;
+begin
+  e := 50; { начало комментария  внутри другой комментарий  }
+end.
