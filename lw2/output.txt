@@ -1,6 +1,10 @@
 program Test5;
 var
-  e: integer;
+  e: integer; {   }
 begin
-  e := 50; { начало комментария  внутри другой комментарий  }
+  e := 50; { comment not closed
+   nested comment }
+  e := 50; { comment not closed
+  **(((((hjhhk***gkjhgj*  (()()()()
+     nested comment *
 end.

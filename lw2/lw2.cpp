@@ -14,6 +14,14 @@
 // примечаний находятся в апострофах. При некорректности  указать
 // номера строки и позиции первой ошибки (10).
 
+// Автор: Кугелев Михаил
+
+// Среда выполнения:
+// g++ (Ubuntu 12.3.0-1ubuntu1~23.04) 12.3.0
+// Copyright (C) 2022 Free Software Foundation, Inc.
+// This is free software; see the source for copying conditions.  There is NO
+// warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -91,7 +99,7 @@ void checkEndOfLine(const char ch)
     }
 }
 
-void writeOpenBrace(Stack *&p, Stack *&pos, std::ofstream& bufFile)
+void writeOpenBrace(Stack *&p, std::ofstream& bufFile)
 {
     if (top(p) == "\'")
     {
@@ -114,7 +122,7 @@ void writeOpenBrace(Stack *&p, Stack *&pos, std::ofstream& bufFile)
     }
 }
 
-void writeCloseBrace(Stack *&p, Stack *&pos, std::ofstream& bufFile)
+void writeCloseBrace(Stack *&p, std::ofstream& bufFile)
 {
     if (top(p) == "\'")
     {
@@ -139,7 +147,7 @@ void writeCloseBrace(Stack *&p, Stack *&pos, std::ofstream& bufFile)
     }
 }
 
-void writeOpenBracket(Stack *&p, Stack *&pos, std::ofstream& bufFile)
+void writeOpenBracket(Stack *&p, std::ofstream& bufFile)
 {
     if (top(p) == "\'")
     {
@@ -161,7 +169,7 @@ void writeOpenBracket(Stack *&p, Stack *&pos, std::ofstream& bufFile)
     }
 }
 
-void writeCloseBracket(Stack *&p, Stack *&pos, std::ofstream& bufFile)
+void writeCloseBracket(Stack *&p, std::ofstream& bufFile)
 {
     if (top(p) == "\'")
     {
@@ -186,7 +194,7 @@ void writeCloseBracket(Stack *&p, Stack *&pos, std::ofstream& bufFile)
     }
 }
 
-void writeSingleQuote(Stack *&p, std::ofstream& bufFile)
+void writeSingleQuote(Stack *&p)
 {
     if (top(p) == "\'")
     {
@@ -198,16 +206,16 @@ void writeSingleQuote(Stack *&p, std::ofstream& bufFile)
     }
 }
 
-bool checkBracesAndBrackets(Stack *&p, Stack *&pos, std::ifstream& inputFile, std::ofstream& bufFile, const char ch1)
+bool checkBracesAndBrackets(Stack *&p, std::ifstream& inputFile, std::ofstream& bufFile, const char ch1)
 {
     if (ch1 == '{')
     {
-        writeOpenBrace(p, pos, bufFile);
+        writeOpenBrace(p, bufFile);
         return true;
     }
     if (ch1 == '}')
     {
-        writeCloseBrace(p, pos, bufFile);
+        writeCloseBrace(p, bufFile);
         return true;
     }
     if (ch1 == '(')
@@ -218,7 +226,16 @@ bool checkBracesAndBrackets(Stack *&p, Stack *&pos, std::ifstream& inputFile, st
         checkEndOfLine(ch2);
         if (ch2 == '*')
         {
-            writeOpenBracket(p, pos, bufFile);
+            writeOpenBracket(p, bufFile);
+        }
+        else if (ch2 == '(')
+        {
+            bufFile << ch1;
+            checkBracesAndBrackets(p, inputFile, bufFile, ch2);
+        }
+        else
+        {
+            bufFile << ch1 << ch2;
         }
         return true;
     }
@@ -230,21 +247,29 @@ bool checkBracesAndBrackets(Stack *&p, Stack *&pos, std::ifstream& inputFile, st
         checkEndOfLine(ch2);
         if (ch2 == ')')
         {
-            writeCloseBracket(p, pos, bufFile);
-            return true;
+            writeCloseBracket(p, bufFile);
+        }
+        else if (ch2 == '*')
+        {
+            bufFile << ch1;
+            checkBracesAndBrackets(p, inputFile, bufFile, ch2);
+        }
+        else
+        {
+            bufFile << ch1 << ch2;
         }
         return false;
     }
     if (ch1 == '\'')
     {
-        writeSingleQuote(p, bufFile);
+        writeSingleQuote(p);
     }
     checkEndOfLine(ch1);
     bufFile << ch1;
     return false;
 }
 
-void formatFile(Stack *&p, Stack *&pos, std::ifstream& inputFile)
+void formatFile(Stack *&p, std::ifstream& inputFile)
 {
     char ch1;
     position = 0;
@@ -258,7 +283,7 @@ void formatFile(Stack *&p, Stack *&pos, std::ifstream& inputFile)
     while (inputFile.get(ch1))
     {
         position++;
-        checkBracesAndBrackets(p, pos, inputFile, outputFile, ch1);
+        checkBracesAndBrackets(p, inputFile, outputFile, ch1);
         if (error)
         {
             clearOutput();
@@ -303,8 +328,7 @@ int main()
         if (inputFile.is_open())
         {
             Stack *top = nullptr;
-            Stack *pos = nullptr;
-            formatFile(top, pos, inputFile);
+            formatFile(top, inputFile);
         }
         else
         {
