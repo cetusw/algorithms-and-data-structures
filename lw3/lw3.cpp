@@ -18,89 +18,136 @@
 #include <fstream>
 #include <string>
 
-const std::string acceptableOperation[3] = {"+", "-", "^"};
-
-const int maxLength = 20;
 struct Tree
 {
-    char name[maxLength];
+    std::string data;
     Tree *father;
     Tree *left, *right;
+    Tree() : data(""), father(nullptr), left(nullptr), right(nullptr) {}
 };
 
-
-struct Stack
+void printDown(const Tree *p, const int level)
 {
-    std::string key{};
-    Stack *next{};
-};
-
-void push(Stack *&p, const std::string &element)
-{
-    const auto top = new Stack;
-    top->key = element;
-    top->next = p;
-    p = top;
-}
-
-void pop(Stack *&p)
-{
-    const Stack *top = p;
-    p = p->next;
-    delete top;
-}
-
-std::string top(Stack *&p)
-{
-    const Stack *top = p;
     if (p == nullptr)
     {
-        return "nullptr";
+        return;
     }
-    return top->key;
-}
 
-bool contains(const std::string arr[], const int size, const std::string &value) {
-    for (int i = 0; i < size; ++i) {
-        if (arr[i] == value) {
-            return true;
-        }
-    }
-    return false;
-}
-
-bool isNumber(const std::string& str) {
-    for (const char c : str) {
-        if (!std::isdigit(c)) {
-            return false;
-        }
-    }
-    return true;
-}
-
-void readExpression(Stack *&operation, Stack *&operand, std::ifstream& inputFile)
-{
-    std::string str;
-    while (std::getline(inputFile, str, ' '))
+    for (int i = 0; i < level; i++)
     {
-        if (str == "(")
-        {
+        std::cout << '.';
+    }
+    std::cout << p->data << std::endl;
 
+    printDown(p->left, level + 1);
+    printDown(p->right, level + 1);
+}
+
+
+int findLowestPriorityOperatorIndex(const std::string &expression)
+{
+    int lowestPriorityIndex = -1;
+    int lowestPriority = 3;
+    int parenthesesLevel = 0;
+
+    for (int i = 0; i < expression.size(); ++i)
+    {
+        const char ch = expression[i];
+
+        if (ch == '(')
+        {
+            ++parenthesesLevel;
         }
-        else if (str == ")")
+        if (ch == ')')
         {
-
+            --parenthesesLevel;
         }
-        else if (contains(acceptableOperation, std::size(acceptableOperation), str)
-        {
 
-        }
-        else if (isNumber(str))
+        if (parenthesesLevel == 0)
         {
+            int currentPriority = 3;
 
+            if (ch == '+' || ch == '-')
+            {
+                currentPriority = 1;
+            }
+            else if (ch == '^')
+            {
+                currentPriority = 2;
+            }
+
+            if (currentPriority < lowestPriority)
+            {
+                lowestPriority = currentPriority;
+                lowestPriorityIndex = i;
+            }
         }
     }
 
+    return lowestPriorityIndex;
+}
+
+std::string createSubstring(const std::string &str, const int start, const int end)
+{
+    std::string substr;
+    for (int i = start; i <= end; ++i)
+    {
+        substr += str[i];
+    }
+
+    return substr;
+}
+
+Tree* buildExpressionTree(const std::string &expression)
+{
+    if (expression[0] == '(' && expression[expression.length() - 1] == ')')
+    {
+        bool hasOuterParentheses = true;
+        int parenthesesLevel = 0;
+
+        for (int i = 0; i < expression.length(); ++i)
+        {
+            if (expression[i] == '(')
+            {
+                ++parenthesesLevel;
+            }
+            if (expression[i] == ')')
+            {
+                --parenthesesLevel;
+            }
+
+            if (parenthesesLevel == 0 && i < expression.length() - 2)
+            {
+                hasOuterParentheses = false;
+                break;
+            }
+        }
+
+        if (hasOuterParentheses)
+        {
+            return buildExpressionTree(createSubstring(expression, 1, static_cast<int>(expression.length() - 1)));
+        }
+    }
+
+    const int index = findLowestPriorityOperatorIndex(expression);
+
+    if (index == -1)
+    {
+        Tree* node = new Tree();
+        node->data = expression[0];
+        return node;
+    }
+
+    Tree* node = new Tree();
+    node->data = std::string(1, expression[index]);
+
+    const std::string leftExpression = createSubstring(expression, 0, index - 1);
+    const std::string rightExpression = createSubstring(expression, index + 1, static_cast<int>(expression.length()) - 1);
+
+    node->left = buildExpressionTree(leftExpression);
+    node->right = buildExpressionTree(rightExpression);
+
+    return node;
 }
 
 int main()
@@ -121,10 +168,10 @@ int main()
 
         if (inputFile.is_open())
         {
-            Stack *operation = nullptr;
-            Stack *operand = nullptr;
-            readExpression(operation, operand, inputFile);
-
+            std::string expression;
+            std::getline(inputFile, expression);
+            const Tree* root = buildExpressionTree(expression);
+            printDown(root, 0);
         }
         else
         {

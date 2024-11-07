@@ -3,4 +3,5 @@ project(lw3)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(lw3 main.cpp)
+add_executable(lw3
+        lw3.cpp)
