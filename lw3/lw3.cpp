@@ -210,7 +210,6 @@ Tree* buildExpressionTree(const std::string &expression)
     }
 
     const int index = findLowestPriorityOperatorIndex(expression);
-    std::cout << expression << " " << index << std::endl;
 
     if (index == -1)
     {
@@ -239,7 +238,6 @@ int main()
 
         std::cout << "\nВведите имя файла (exit, чтобы выйти): ";
         std::cin >> fileName;
-        fileName = "expr.txt";
 
         if (fileName == "exit")
         {
