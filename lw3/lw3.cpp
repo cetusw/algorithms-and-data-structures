@@ -64,6 +64,10 @@ bool isExpressionCorrect(const std::string &expression)
             }
             lastWasOperator = true;
         }
+        else if (ch == '+' || ch == '-')
+        {
+            lastWasOperator = true;
+        }
         else
         {
             lastWasOperator = false;
@@ -107,60 +111,51 @@ int findLowestPriorityOperatorIndex(const std::string &expression)
     int lowestPriorityIndex = -1;
     int lowestPriority = 4;
     int parenthesesLevel = 0;
-    std::string state = "start";
+    bool expectingOperand = true;
 
-    for (int i = static_cast<int>(expression.size()) - 1; i > 0; --i)
+    for (int i = static_cast<int>(expression.size()) - 1; i >= 0; --i)
     {
         const char ch = expression[i];
 
-        if (ch == '(')
-        {
-            state = "operand";
-            ++parenthesesLevel;
-        }
         if (ch == ')')
         {
-            state = "operator";
+            ++parenthesesLevel;
+        }
+        else if (ch == '(')
+        {
             --parenthesesLevel;
         }
-
-        if (parenthesesLevel == 0)
+        else if (parenthesesLevel == 0)
         {
-            int currentPriority = 3;
-
+            int currentPriority = 4;
             if (ch == '+' || ch == '-')
             {
-                if (state == "operand")
+                if (expectingOperand)
                 {
-                    currentPriority = 1;
-                    state = "operator";
+                    currentPriority = 3;
                 }
                 else
                 {
-                    state = "one-operator";
-
+                    currentPriority = 1;
                 }
             }
             else if (ch == '*' || ch == '/')
             {
                 currentPriority = 2;
-                state = "operator";
             }
             else if (ch == '^')
             {
                 currentPriority = 3;
-                state = "operator";
-            }
-            else
-            {
-                state = "operand";
             }
 
-            if ((currentPriority < lowestPriority || (currentPriority == lowestPriority && currentPriority == 3)) && state != "one-operator" && state != "operand")
+            if (currentPriority < lowestPriority ||
+               (currentPriority == lowestPriority && currentPriority == 3 && expectingOperand == false))
             {
                 lowestPriority = currentPriority;
                 lowestPriorityIndex = i;
             }
+
+            expectingOperand = !(ch >= 'a' && ch <= 'z');
         }
     }
 
@@ -211,10 +206,18 @@ Tree* buildExpressionTree(const std::string &expression)
 
     const int index = findLowestPriorityOperatorIndex(expression);
 
+    if (index == 0 && (expression[0] == '-' || expression[0] == '+'))
+    {
+        Tree* node = new Tree();
+        node->data = std::string(1, expression[0]);
+        node->right = buildExpressionTree(createSubstring(expression, 1, expression.length() - 1));
+        return node;
+    }
+
     if (index == -1)
     {
         Tree* node = new Tree();
-        node->data = expression;
+        node->data = expression[0];
         return node;
     }
 
