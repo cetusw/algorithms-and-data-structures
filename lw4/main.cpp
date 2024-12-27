@@ -47,6 +47,7 @@ void calculateNumberOfVertexes(const int &n)
 
 void readGraph(std::ifstream &inputFile)
 {
+    graph.clear();
     while (!inputFile.eof())
     {
         std::vector<int> value = {};
@@ -94,7 +95,7 @@ void printDistance(const std::vector<int> &distance)
     }
 }
 
-void printDistanceBetween(const std::vector<int> &distance, const int &firstVertex, const int &secondVertex)
+void printDistanceBetween(const std::vector<int> &distance, const int &firstVertex, const int secondVertex)
 {
     if (distance[secondVertex] != INFINITY)
     {
@@ -107,19 +108,54 @@ void printDistanceBetween(const std::vector<int> &distance, const int &firstVert
     }
 }
 
-void handleGraph(std::vector<int> &distance)
+void handleGraph(const int &firstVertex, const int &secondVertex)
 {
-    for (const std::vector<int> &value : graph)
+    std::vector<int> distance;
+    for (int i = 0; i <= vertexes; i++)
     {
-        if (distance[value[0]] != INFINITY && distance[value[0]] + value[2] < distance[value[1]])
+        distance.emplace_back(INFINITY);
+    }
+    distance[firstVertex] = 0;
+
+    std::vector predecessor(vertexes + 1, -1);
+
+    for (int i = 0; i < vertexes; i++)
+    {
+        for (const std::vector<int> &value : graph)
         {
-            distance[value[1]] = distance[value[0]] + value[2];
+            if (distance[value[0]] != INFINITY && distance[value[0]] + value[2] < distance[value[1]])
+            {
+                distance[value[1]] = distance[value[0]] + value[2];
+                predecessor[value[1]] = value[0];
+            }
         }
     }
+
+    std::vector<int> path;
+    for (int j = secondVertex; j != -1; j = predecessor[j])
+    {
+        path.push_back(j);
+    }
+
+    std::ranges::reverse(path);
+
+    std::cout << "Кратчайший путь от " << firstVertex << " до " << secondVertex << ": ";
+    for (int vertex : path)
+    {
+        std::cout << vertex << " ";
+    }
+    std::cout << "\nДлина пути: " << distance[secondVertex] << std::endl;
 }
 
-void isNegativeCycle(std::vector<int> &distance)
+bool isNegativeCycle(const int firstVertex)
 {
+    std::vector<int> distance;
+    for (int i = 0; i <= vertexes; i++)
+    {
+        distance.emplace_back(INFINITY);
+    }
+    distance[firstVertex] = 0;
+
     std::vector predecessor(vertexes + 1, -1);
 
     int lastUpdatedVertex = -1;
@@ -140,7 +176,7 @@ void isNegativeCycle(std::vector<int> &distance)
 
     if (lastUpdatedVertex == -1) {
         error = false;
-        return;
+        return false;
     }
 
     for (int i = 0; i < vertexes; ++i) {
@@ -164,30 +200,15 @@ void isNegativeCycle(std::vector<int> &distance)
     std::cout << std::endl;
 
     error = true;
+    return true;
 }
 
 void findShortestPathBetweenVertexes(const int firstVertex, const int secondVertex)
 {
-    std::vector<int> distance = {};
-    for (int i = 0; i <= vertexes; i++)
+    if (!isNegativeCycle(firstVertex))
     {
-        distance.emplace_back(INFINITY);
+        handleGraph(firstVertex, secondVertex);
     }
-    distance[firstVertex] = 0;
-
-    for (int i = 0; i < vertexes; i++)
-    {
-        handleGraph(distance);
-    }
-
-    isNegativeCycle(distance);
-
-    if (error)
-    {
-        return;
-    }
-
-    printDistanceBetween(distance, firstVertex, secondVertex);
 }
 int main()
 {
